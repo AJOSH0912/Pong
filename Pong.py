@@ -47,11 +47,11 @@ clock = pygame.time.Clock()
 time_elapsed_since_last_speed_increase = 0
 SPEED_INCREASE_INTERVAL = 2000  # Speed increase interval in milliseconds
 
-#Game mode variable
-game_mode = None
+# Game mode variable
+game_mode = None  # New: Game mode variable
 
-#AI Paddle speed
-AI_SPEED = 5
+# AI Paddle speed
+AI_SPEED = 5  # New: AI Paddle speed
 
 def show_menu():
     """Display the menu to choose game mode."""
@@ -67,87 +67,112 @@ def show_menu():
     screen.blit(text2, (SCREEN_WIDTH // 2 - text2.get_width() // 2, SCREEN_HEIGHT // 2 + 40))
 
     pygame.display.flip()
-    
+
+def move_ai_paddle():
+    """Move the AI paddle."""
+    if ball.centery > right_paddle.centery:
+        right_paddle.y += AI_SPEED
+    elif ball.centery < right_paddle.centery:
+        right_paddle.y -= AI_SPEED
+
 # Main game loop
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+running = True
+while running:
+    if game_mode is None:  # New: Menu handling
+        show_menu()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_1:
+                    game_mode = 'single_player'
+                elif event.key == pygame.K_2:
+                    game_mode = 'two_player'
+    else:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            # Keydown events
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_w:
+                    left_paddle_speed = -PADDLE_SPEED
+                elif event.key == pygame.K_s:
+                    left_paddle_speed = PADDLE_SPEED
+                if game_mode == 'two_player':  # New: Two-player control
+                    if event.key == pygame.K_UP:
+                        right_paddle_speed = -PADDLE_SPEED
+                    elif event.key == pygame.K_DOWN:
+                        right_paddle_speed = PADDLE_SPEED
+            # Keyup events
+            elif event.type == pygame.KEYUP:
+                if event.key == pygame.K_w or event.key == pygame.K_s:
+                    left_paddle_speed = 0
+                if game_mode == 'two_player':  # New: Two-player control
+                    if event.key == pygame.K_UP or event.key == pygame.K_DOWN:
+                        right_paddle_speed = 0
+        
+        # Move paddles
+        left_paddle.y += left_paddle_speed
+        if game_mode == 'two_player':
+            right_paddle.y += right_paddle_speed
+        elif game_mode == 'single_player':
+            move_ai_paddle()  # New: AI paddle movement
 
-        # Keydown events
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_w:
-                left_paddle_speed = -PADDLE_SPEED
-            elif event.key == pygame.K_s:
-                left_paddle_speed = PADDLE_SPEED
-            elif event.key == pygame.K_UP:
-                right_paddle_speed = -PADDLE_SPEED
-            elif event.key == pygame.K_DOWN:
-                right_paddle_speed = PADDLE_SPEED
-        # Keyup events
-        elif event.type == pygame.KEYUP:
-            if event.key == pygame.K_w or event.key == pygame.K_s:
-                left_paddle_speed = 0
-            elif event.key == pygame.K_UP or event.key == pygame.K_DOWN:
-                right_paddle_speed = 0
-    
-    # Move paddles
-    left_paddle.y += left_paddle_speed
-    right_paddle.y += right_paddle_speed
+        # Prevent paddles from moving out of the screen
+        if left_paddle.top < 0:
+            left_paddle.top = 0
+        if left_paddle.bottom > SCREEN_HEIGHT:
+            left_paddle.bottom = SCREEN_HEIGHT
+        if right_paddle.top < 0:
+            right_paddle.top = 0
+        if right_paddle.bottom > SCREEN_HEIGHT:
+            right_paddle.bottom = SCREEN_HEIGHT
 
-    # Prevent paddles from moving out of the screen
-    if left_paddle.top < 0:
-        left_paddle.top = 0
-    if left_paddle.bottom > SCREEN_HEIGHT:
-        left_paddle.bottom = SCREEN_HEIGHT
-    if right_paddle.top < 0:
-        right_paddle.top = 0
-    if right_paddle.bottom > SCREEN_HEIGHT:
-        right_paddle.bottom = SCREEN_HEIGHT
+        # Move ball
+        ball.x += BALL_SPEED_X
+        ball.y += BALL_SPEED_Y
 
-    # Move ball
-    ball.x += BALL_SPEED_X
-    ball.y += BALL_SPEED_Y
+        # Ball collision with top/bottom walls
+        if ball.top <= 0 or ball.bottom >= SCREEN_HEIGHT:
+            BALL_SPEED_Y = -BALL_SPEED_Y
 
-    # Ball collision with top/bottom walls
-    if ball.top <= 0 or ball.bottom >= SCREEN_HEIGHT:
-        BALL_SPEED_Y = -BALL_SPEED_Y
+        # Ball collision with paddles
+        if ball.colliderect(left_paddle) or ball.colliderect(right_paddle):
+            BALL_SPEED_X = -BALL_SPEED_X
 
-# Ball collision with paddles
-    if ball.colliderect(left_paddle) or ball.colliderect(right_paddle):
-        BALL_SPEED_X = -BALL_SPEED_X
+        # Ball goes out of bounds
+        if ball.left <= 0 or ball.right >= SCREEN_WIDTH:
+            ball.x = (SCREEN_WIDTH // 2) - (BALL_SIZE // 2)
+            ball.y = (SCREEN_HEIGHT // 2) - (BALL_SIZE // 2)
+            BALL_SPEED_X = -BALL_SPEED_X
+            # Reset ball speed
+            BALL_SPEED_X = 5
+            BALL_SPEED_Y = 5
 
-    # Ball goes out of bounds
-    if ball.left <= 0 or ball.right >= SCREEN_WIDTH:
-        ball.x = (SCREEN_WIDTH // 2) - (BALL_SIZE // 2)
-        ball.y = (SCREEN_HEIGHT // 2) - (BALL_SIZE // 2)
-        BALL_SPEED_X = -BALL_SPEED_X
-        #Reset ball speed
-        BALL_SPEED_X = 5
-        BALL_SPEED_Y = 5
+        # Increase ball speed over time
+        time_elapsed_since_last_speed_increase += clock.get_time()
+        if time_elapsed_since_last_speed_increase >= SPEED_INCREASE_INTERVAL:
+            BALL_SPEED_X *= 1 + BALL_SPEED_INCREMENT
+            BALL_SPEED_Y *= 1 + BALL_SPEED_INCREMENT
+            time_elapsed_since_last_speed_increase = 0
 
-    # New: Increase ball speed over time
-    time_elapsed_since_last_speed_increase += clock.get_time()
-    if time_elapsed_since_last_speed_increase >= SPEED_INCREASE_INTERVAL:
-        BALL_SPEED_X *= 1 + BALL_SPEED_INCREMENT
-        BALL_SPEED_Y *= 1 + BALL_SPEED_INCREMENT
-        time_elapsed_since_last_speed_increase = 0
-    # Clear screen
-    screen.fill(BLACK)
+        # Clear screen
+        screen.fill(BLACK)
 
-    # Draw paddles
-    pygame.draw.rect(screen, WHITE, left_paddle)
-    pygame.draw.rect(screen, WHITE, right_paddle)
+        # Draw paddles
+        pygame.draw.rect(screen, WHITE, left_paddle)
+        pygame.draw.rect(screen, WHITE, right_paddle)
 
-    # Draw ball
-    pygame.draw.ellipse(screen, WHITE, ball)
+        # Draw ball
+        pygame.draw.ellipse(screen, WHITE, ball)
 
-    # Draw center line
-    pygame.draw.aaline(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+        # Draw center line
+        pygame.draw.aaline(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT))
 
-    # Update display
-    pygame.display.flip()
+        # Update display
+        pygame.display.flip()
 
-    # Frame rate
-    clock.tick(60)
+        # Frame rate
+        clock.tick(60)
