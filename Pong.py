@@ -29,6 +29,7 @@ PADDLE_SPEED = 7
 # Ball speed
 BALL_SPEED_X = 5
 BALL_SPEED_Y = 5
+BALL_SPEED_INCREMENT = 0.1  # Speed increment for the ball
 
 # Create paddles
 left_paddle = pygame.Rect(10, (SCREEN_HEIGHT // 2) - (PADDLE_HEIGHT // 2), PADDLE_WIDTH, PADDLE_HEIGHT)
@@ -41,6 +42,32 @@ ball = pygame.Rect((SCREEN_WIDTH // 2) - (BALL_SIZE // 2), (SCREEN_HEIGHT // 2) 
 left_paddle_speed = 0
 right_paddle_speed = 0
 
+# Clock to manage ball speed increment
+clock = pygame.time.Clock()
+time_elapsed_since_last_speed_increase = 0
+SPEED_INCREASE_INTERVAL = 2000  # Speed increase interval in milliseconds
+
+#Game mode variable
+game_mode = None
+
+#AI Paddle speed
+AI_SPEED = 5
+
+def show_menu():
+    """Display the menu to choose game mode."""
+    screen.fill(BLACK)
+    font = pygame.font.Font(None, 74)
+    text = font.render("Pong Game", True, WHITE)
+    screen.blit(text, (SCREEN_WIDTH // 2 - text.get_width() // 2, SCREEN_HEIGHT // 4))
+
+    font = pygame.font.Font(None, 36)
+    text1 = font.render("1. Single Player", True, WHITE)
+    text2 = font.render("2. Two Player", True, WHITE)
+    screen.blit(text1, (SCREEN_WIDTH // 2 - text1.get_width() // 2, SCREEN_HEIGHT // 2))
+    screen.blit(text2, (SCREEN_WIDTH // 2 - text2.get_width() // 2, SCREEN_HEIGHT // 2 + 40))
+
+    pygame.display.flip()
+    
 # Main game loop
 while True:
     for event in pygame.event.get():
@@ -96,7 +123,16 @@ while True:
         ball.x = (SCREEN_WIDTH // 2) - (BALL_SIZE // 2)
         ball.y = (SCREEN_HEIGHT // 2) - (BALL_SIZE // 2)
         BALL_SPEED_X = -BALL_SPEED_X
+        #Reset ball speed
+        BALL_SPEED_X = 5
+        BALL_SPEED_Y = 5
 
+    # New: Increase ball speed over time
+    time_elapsed_since_last_speed_increase += clock.get_time()
+    if time_elapsed_since_last_speed_increase >= SPEED_INCREASE_INTERVAL:
+        BALL_SPEED_X *= 1 + BALL_SPEED_INCREMENT
+        BALL_SPEED_Y *= 1 + BALL_SPEED_INCREMENT
+        time_elapsed_since_last_speed_increase = 0
     # Clear screen
     screen.fill(BLACK)
 
@@ -114,4 +150,4 @@ while True:
     pygame.display.flip()
 
     # Frame rate
-    pygame.time.Clock().tick(60)
+    clock.tick(60)
