@@ -86,3 +86,32 @@ while True:
     # Ball collision with top/bottom walls
     if ball.top <= 0 or ball.bottom >= SCREEN_HEIGHT:
         BALL_SPEED_Y = -BALL_SPEED_Y
+
+# Ball collision with paddles
+    if ball.colliderect(left_paddle) or ball.colliderect(right_paddle):
+        BALL_SPEED_X = -BALL_SPEED_X
+
+    # Ball goes out of bounds
+    if ball.left <= 0 or ball.right >= SCREEN_WIDTH:
+        ball.x = (SCREEN_WIDTH // 2) - (BALL_SIZE // 2)
+        ball.y = (SCREEN_HEIGHT // 2) - (BALL_SIZE // 2)
+        BALL_SPEED_X = -BALL_SPEED_X
+
+    # Clear screen
+    screen.fill(BLACK)
+
+    # Draw paddles
+    pygame.draw.rect(screen, WHITE, left_paddle)
+    pygame.draw.rect(screen, WHITE, right_paddle)
+
+    # Draw ball
+    pygame.draw.ellipse(screen, WHITE, ball)
+
+    # Draw center line
+    pygame.draw.aaline(screen, WHITE, (SCREEN_WIDTH // 2, 0), (SCREEN_WIDTH // 2, SCREEN_HEIGHT))
+
+    # Update display
+    pygame.display.flip()
+
+    # Frame rate
+    pygame.time.Clock().tick(60)
